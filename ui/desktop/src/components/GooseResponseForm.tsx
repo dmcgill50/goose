@@ -140,9 +140,13 @@ export default function GooseResponseForm({ message: _message, metadata, append 
     return null;
   }
 
+  function isForm(f: DynamicForm) {
+    return f && f.title && f.description && f.fields && Array.isArray(f.fields) && f.fields.length > 0;
+  }
+
   return (
     <div className="space-y-4">
-      {isQuestion && !isOptions && (
+      {isQuestion && !isOptions && !isForm(dynamicForm) && (
         <div className="flex items-center gap-4 p-4 rounded-lg bg-tool-card dark:bg-tool-card-dark border dark:border-dark-border">
           <Button
             onClick={handleAccept}
@@ -184,7 +188,7 @@ export default function GooseResponseForm({ message: _message, metadata, append 
           </Button>
         </div>
       )}
-      {dynamicForm && dynamicForm.fields && !isOptions && (
+      {isForm(dynamicForm) && !isOptions && (
         <form onSubmit={handleFormSubmit} className="space-y-4 p-4 rounded-lg bg-tool-card dark:bg-tool-card-dark border dark:border-dark-border">
           <h2 className="text-xl font-bold mb-2 dark:text-gray-100">{dynamicForm.title}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{dynamicForm.description}</p>
