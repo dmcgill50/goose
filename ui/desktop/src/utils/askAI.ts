@@ -81,7 +81,7 @@ The response will have:
 * a title, description,
 * a list of fields, each field will have a label, type, name, placeholder, and required (boolean).
 (type is either text or textarea only).
-If it is not requesting clearly several pieces of information, just return and empty object.
+If it is not requesting clearly several pieces of information, just return an empty object.
 
 ### Example Message:
 I'll help you scaffold out a Python package. To create a well-structured Python package, I'll need to know a few key pieces of information:
