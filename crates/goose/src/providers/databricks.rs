@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use std::time::Duration;
 
 use super::base::{Provider, ProviderUsage, Usage};
-use super::configs::{DatabricksAuth, DatabricksProviderConfig};
+use super::configs::{DatabricksAuth, DatabricksProviderConfig, ModelConfig, ProviderModelConfig};
 use super::model_pricing::{cost, model_pricing_for};
 use super::oauth;
 use super::utils::{
@@ -76,7 +76,7 @@ impl DatabricksProvider {
         let url = format!(
             "{}/serving-endpoints/{}/invocations",
             self.config.host.trim_end_matches('/'),
-            self.config.model
+            self.config.model.model_name
         );
 
         let auth_header = self.ensure_auth_header().await?;
@@ -129,10 +129,10 @@ impl Provider for DatabricksProvider {
         if !tools_spec.is_empty() {
             payload["tools"] = json!(tools_spec);
         }
-        if let Some(temp) = self.config.temperature {
+        if let Some(temp) = self.config.model.temperature {
             payload["temperature"] = json!(temp);
         }
-        if let Some(tokens) = self.config.max_tokens {
+        if let Some(tokens) = self.config.model.max_tokens {
             payload["max_tokens"] = json!(tokens);
         }
 
@@ -168,12 +168,17 @@ impl Provider for DatabricksProvider {
 
         Ok((message, ProviderUsage::new(model, usage, cost)))
     }
+
+    fn get_model_config(&self) -> &ModelConfig {
+        self.config.model_config()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::message::MessageContent;
+    use crate::providers::configs::ModelConfig;
     use wiremock::matchers::{body_json, header, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -219,10 +224,8 @@ mod tests {
         // Create the DatabricksProvider with the mock server's URL as the host
         let config = DatabricksProviderConfig {
             host: mock_server.uri(),
-            model: "my-databricks-model".to_string(),
             auth: DatabricksAuth::Token("test_token".to_string()),
-            temperature: None,
-            max_tokens: None,
+            model: ModelConfig::new("my-databricks-model".to_string()),
             image_format: crate::providers::utils::ImageFormat::Anthropic,
         };
 

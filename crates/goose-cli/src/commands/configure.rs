@@ -110,10 +110,14 @@ pub async fn handle_configure(
         provider: provider_name.to_string(),
         model: model.clone(),
         additional_systems,
+        temperature: None,
+        context_limit: None,
+        max_tokens: None,
+        estimate_factor: None,
     };
 
     // Confirm everything is configured correctly by calling a model!
-    let provider_config = get_provider_config(&provider_name, model.clone());
+    let provider_config = get_provider_config(&provider_name, profile.clone());
     let spin = spinner();
     spin.start("Checking your configuration...");
     let provider = factory::get_provider(provider_config).unwrap();

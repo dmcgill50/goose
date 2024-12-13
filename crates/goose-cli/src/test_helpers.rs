@@ -7,7 +7,25 @@ pub fn run_with_tmp_dir<F: FnOnce() -> T, T>(func: F) -> T {
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_path_buf();
-    setup_profile(&temp_dir_path);
+    setup_profile(&temp_dir_path, None);
+
+    temp_env::with_vars(
+        [
+            ("HOME", Some(temp_dir_path.as_os_str())),
+            ("DATABRICKS_HOST", Some(OsStr::new("tmp_host_url"))),
+        ],
+        func,
+    )
+}
+
+#[cfg(test)]
+pub fn run_profile_with_tmp_dir<F: FnOnce() -> T, T>(profile: &str, func: F) -> T {
+    use std::ffi::OsStr;
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let temp_dir_path = temp_dir.path().to_path_buf();
+    setup_profile(&temp_dir_path, Some(profile));
 
     temp_env::with_vars(
         [
@@ -29,7 +47,7 @@ where
 
     let temp_dir = tempdir().unwrap();
     let temp_dir_path = temp_dir.path().to_path_buf();
-    setup_profile(&temp_dir_path);
+    setup_profile(&temp_dir_path, None);
 
     temp_env::async_with_vars(
         [
@@ -44,7 +62,8 @@ where
 #[cfg(test)]
 use std::path::PathBuf;
 #[cfg(test)]
-fn setup_profile(temp_dir_path: &PathBuf) {
+/// Setup a goose profile for testing, and an optional profile string
+fn setup_profile(temp_dir_path: &PathBuf, profile_string: Option<&str>) {
     use std::fs;
 
     let profile_path = temp_dir_path
@@ -52,7 +71,7 @@ fn setup_profile(temp_dir_path: &PathBuf) {
         .join("goose")
         .join("profiles.json");
     fs::create_dir_all(profile_path.parent().unwrap()).unwrap();
-    let profile = r#"
+    let default_profile = r#"
 {
     "profile_items": {
         "default": {
@@ -62,5 +81,6 @@ fn setup_profile(temp_dir_path: &PathBuf) {
         }
     }
 }"#;
-    fs::write(&profile_path, profile).unwrap();
+
+    fs::write(&profile_path, profile_string.unwrap_or(default_profile)).unwrap();
 }

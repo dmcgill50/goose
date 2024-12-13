@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use goose::{
     message::Message,
     providers::{
-        configs::{DatabricksProviderConfig, OpenAiProviderConfig, ProviderConfig},
+        configs::{DatabricksProviderConfig, ModelConfig, OpenAiProviderConfig, ProviderConfig},
         factory::get_provider,
     },
 };
@@ -34,9 +34,7 @@ async fn main() -> Result<()> {
     let config2 = ProviderConfig::OpenAi(OpenAiProviderConfig {
         host: "https://api.openai.com".into(),
         api_key,
-        model: "gpt-4o".into(),
-        temperature: None,
-        max_tokens: None,
+        model: ModelConfig::new("gpt-4o".into()),
     });
 
     for config in [config1, config2] {

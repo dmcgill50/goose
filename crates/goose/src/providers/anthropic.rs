@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use super::base::ProviderUsage;
 use super::base::{Provider, Usage};
-use super::configs::AnthropicProviderConfig;
+use super::configs::{AnthropicProviderConfig, ModelConfig, ProviderModelConfig};
 use super::model_pricing::cost;
 use super::model_pricing::model_pricing_for;
 use super::utils::get_model;
@@ -225,9 +225,9 @@ impl Provider for AnthropicProvider {
         }
 
         let mut payload = json!({
-            "model": self.config.model,
+            "model": self.config.model.model_name,
             "messages": anthropic_messages,
-            "max_tokens": self.config.max_tokens.unwrap_or(4096)
+            "max_tokens": self.config.model.max_tokens.unwrap_or(4096)
         });
 
         // Add system message if present
@@ -247,7 +247,7 @@ impl Provider for AnthropicProvider {
         }
 
         // Add temperature if specified
-        if let Some(temp) = self.config.temperature {
+        if let Some(temp) = self.config.model.temperature {
             payload
                 .as_object_mut()
                 .unwrap()
@@ -265,10 +265,16 @@ impl Provider for AnthropicProvider {
 
         Ok((message, ProviderUsage::new(model, usage, cost)))
     }
+
+    fn get_model_config(&self) -> &ModelConfig {
+        self.config.model_config()
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::providers::configs::ModelConfig;
+
     use super::*;
     use rust_decimal_macros::dec;
     use serde_json::json;
@@ -287,9 +293,9 @@ mod tests {
         let config = AnthropicProviderConfig {
             host: mock_server.uri(),
             api_key: "test_api_key".to_string(),
-            model: "claude-3-sonnet-20241022".to_string(),
-            temperature: Some(0.7),
-            max_tokens: None,
+            model: ModelConfig::new("claude-3-sonnet-20241022".to_string())
+                .with_temperature(Some(0.7))
+                .with_context_limit(Some(200_000)),
         };
 
         let provider = AnthropicProvider::new(config).unwrap();

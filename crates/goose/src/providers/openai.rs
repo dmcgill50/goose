@@ -8,6 +8,7 @@ use std::time::Duration;
 use super::base::ProviderUsage;
 use super::base::{Provider, Usage};
 use super::configs::OpenAiProviderConfig;
+use super::configs::{ModelConfig, ProviderModelConfig};
 use super::model_pricing::cost;
 use super::model_pricing::model_pricing_for;
 use super::utils::get_model;
@@ -116,7 +117,7 @@ impl Provider for OpenAiProvider {
         messages_array.extend(messages_spec);
 
         let mut payload = json!({
-            "model": self.config.model,
+            "model": self.config.model.model_name,
             "messages": messages_array
         });
 
@@ -127,13 +128,13 @@ impl Provider for OpenAiProvider {
                 .unwrap()
                 .insert("tools".to_string(), json!(tools_spec));
         }
-        if let Some(temp) = self.config.temperature {
+        if let Some(temp) = self.config.model.temperature {
             payload
                 .as_object_mut()
                 .unwrap()
                 .insert("temperature".to_string(), json!(temp));
         }
-        if let Some(tokens) = self.config.max_tokens {
+        if let Some(tokens) = self.config.model.max_tokens {
             payload
                 .as_object_mut()
                 .unwrap()
@@ -159,12 +160,17 @@ impl Provider for OpenAiProvider {
 
         Ok((message, ProviderUsage::new(model, usage, cost)))
     }
+
+    fn get_model_config(&self) -> &ModelConfig {
+        self.config.model_config()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::message::MessageContent;
+    use crate::providers::configs::ModelConfig;
     use rust_decimal_macros::dec;
     use serde_json::json;
     use wiremock::matchers::{method, path};
@@ -182,9 +188,7 @@ mod tests {
         let config = OpenAiProviderConfig {
             host: mock_server.uri(),
             api_key: "test_api_key".to_string(),
-            model: "gpt-3.5-turbo".to_string(),
-            temperature: Some(0.7),
-            max_tokens: None,
+            model: ModelConfig::new("gpt-3.5-turbo".to_string()).with_temperature(Some(0.7)),
         };
 
         let provider = OpenAiProvider::new(config).unwrap();

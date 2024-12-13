@@ -41,8 +41,6 @@ impl Clone for AppState {
                         host: config.host.clone(),
                         api_key: config.api_key.clone(),
                         model: config.model.clone(),
-                        temperature: config.temperature,
-                        max_tokens: config.max_tokens,
                     })
                 }
                 ProviderConfig::Databricks(config) => ProviderConfig::Databricks(
@@ -50,8 +48,6 @@ impl Clone for AppState {
                         host: config.host.clone(),
                         auth: config.auth.clone(),
                         model: config.model.clone(),
-                        temperature: config.temperature,
-                        max_tokens: config.max_tokens,
                         image_format: config.image_format,
                     },
                 ),
@@ -59,8 +55,6 @@ impl Clone for AppState {
                     ProviderConfig::Ollama(goose::providers::configs::OllamaProviderConfig {
                         host: config.host.clone(),
                         model: config.model.clone(),
-                        temperature: config.temperature,
-                        max_tokens: config.max_tokens,
                     })
                 }
                 ProviderConfig::Anthropic(config) => {
@@ -68,8 +62,6 @@ impl Clone for AppState {
                         host: config.host.clone(),
                         api_key: config.api_key.clone(),
                         model: config.model.clone(),
-                        temperature: config.temperature,
-                        max_tokens: config.max_tokens,
                     })
                 }
             },

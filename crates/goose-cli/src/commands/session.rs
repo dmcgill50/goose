@@ -42,8 +42,7 @@ pub fn build_session<'a>(
 
     let loaded_profile = load_profile(profile);
 
-    let provider_config =
-        get_provider_config(&loaded_profile.provider, loaded_profile.model.clone());
+    let provider_config = get_provider_config(&loaded_profile.provider, (*loaded_profile).clone());
 
     // TODO: Odd to be prepping the provider rather than having that done in the agent?
     let provider = factory::get_provider(provider_config).unwrap();

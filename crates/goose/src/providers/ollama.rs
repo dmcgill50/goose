@@ -1,5 +1,5 @@
 use super::base::{Provider, ProviderUsage, Usage};
-use super::configs::OllamaProviderConfig;
+use super::configs::{ModelConfig, OllamaProviderConfig, ProviderModelConfig};
 use super::utils::{
     get_model, messages_to_openai_spec, openai_response_to_message, tools_to_openai_spec,
     ImageFormat,
@@ -99,7 +99,7 @@ impl Provider for OllamaProvider {
         messages_array.extend(messages_spec);
 
         let mut payload = json!({
-            "model": self.config.model,
+            "model": self.config.model.model_name,
             "messages": messages_array
         });
 
@@ -109,13 +109,13 @@ impl Provider for OllamaProvider {
                 .unwrap()
                 .insert("tools".to_string(), json!(tools_spec));
         }
-        if let Some(temp) = self.config.temperature {
+        if let Some(temp) = self.config.model.temperature {
             payload
                 .as_object_mut()
                 .unwrap()
                 .insert("temperature".to_string(), json!(temp));
         }
-        if let Some(tokens) = self.config.max_tokens {
+        if let Some(tokens) = self.config.model.max_tokens {
             payload
                 .as_object_mut()
                 .unwrap()
@@ -131,6 +131,10 @@ impl Provider for OllamaProvider {
         let cost = None;
 
         Ok((message, ProviderUsage::new(model, usage, cost)))
+    }
+
+    fn get_model_config(&self) -> &ModelConfig {
+        self.config.model_config()
     }
 }
 
@@ -153,9 +157,7 @@ mod tests {
         // Create the OllamaProvider with the mock server's URL as the host
         let config = OllamaProviderConfig {
             host: mock_server.uri(),
-            model: OLLAMA_MODEL.to_string(),
-            temperature: None,
-            max_tokens: None,
+            model: ModelConfig::new(OLLAMA_MODEL.to_string()),
         };
 
         let provider = OllamaProvider::new(config).unwrap();
@@ -289,9 +291,7 @@ mod tests {
 
         let config = OllamaProviderConfig {
             host: mock_server.uri(),
-            model: OLLAMA_MODEL.to_string(),
-            temperature: None,
-            max_tokens: None,
+            model: ModelConfig::new(OLLAMA_MODEL.to_string()),
         };
 
         let provider = OllamaProvider::new(config)?;

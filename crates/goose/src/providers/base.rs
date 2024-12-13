@@ -2,6 +2,7 @@ use anyhow::Result;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use super::configs::ModelConfig;
 use crate::message::Message;
 use mcp_core::tool::Tool;
 
@@ -51,6 +52,9 @@ use async_trait::async_trait;
 /// Base trait for AI providers (OpenAI, Anthropic, etc)
 #[async_trait]
 pub trait Provider: Send + Sync {
+    /// Get the model configuration
+    fn get_model_config(&self) -> &ModelConfig;
+
     /// Generate the next message using the configured model and other parameters
     ///
     /// # Arguments
