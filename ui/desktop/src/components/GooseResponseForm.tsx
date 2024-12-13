@@ -121,16 +121,6 @@ export default function GooseResponseForm({ message: _message, metadata, append 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (dynamicForm) {
-      // Validate required fields
-      const missingRequired = dynamicForm.fields
-        .filter(field => field.required)
-        .find(field => !formValues[field.name]);
-
-      if (missingRequired) {
-        alert(`Please fill in the required field: ${missingRequired.label}`);
-        return;
-      }
-
       const message = {
         content: JSON.stringify(formValues),
         role: "user",
@@ -194,7 +184,7 @@ export default function GooseResponseForm({ message: _message, metadata, append 
           </Button>
         </div>
       )}
-      {dynamicForm && (
+      {dynamicForm && dynamicForm.fields && !isOptions && (
         <form onSubmit={handleFormSubmit} className="space-y-4 p-4 rounded-lg bg-tool-card dark:bg-tool-card-dark border dark:border-dark-border">
           <h2 className="text-xl font-bold mb-2 dark:text-gray-100">{dynamicForm.title}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{dynamicForm.description}</p>
