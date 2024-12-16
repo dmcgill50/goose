@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
 use serde_json::{json, Value};
 use std::time::Duration;
+use tracing::{debug, info_span, Instrument, info, span};
 
 use super::base::{Provider, Usage};
 use super::configs::{DatabricksAuth, DatabricksProviderConfig};
@@ -71,7 +72,19 @@ impl DatabricksProvider {
         Ok(Usage::new(input_tokens, output_tokens, total_tokens))
     }
 
+    #[tracing::instrument(skip(self, payload), fields(model = self.config.model))]
     async fn post(&self, payload: Value) -> Result<Value> {
+        match serde_json::to_string(&payload) {
+            Ok(json_string) => {
+                // Log the payload directly
+                info!(json_string, "payload");
+            }
+            Err(err) => {
+                // Log an error if JSON serialization fails
+                tracing::warn!("Failed to serialize payload to JSON: {}", err);
+            }
+        }
+
         let url = format!(
             "{}/serving-endpoints/{}/invocations",
             self.config.host.trim_end_matches('/'),
@@ -88,7 +101,20 @@ impl DatabricksProvider {
             .await?;
 
         match response.status() {
-            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::OK => {
+                let response_data = response.json().await?;
+                match serde_json::to_string(&response_data) {
+                    Ok(json_string) => {
+                        // Log the payload directly
+                        info!(json_string, "response");
+                    }
+                    Err(err) => {
+                        // Log an error if JSON serialization fails
+                        tracing::warn!("Failed to serialize payload to JSON: {}", err);
+                    }
+                }
+                Ok(response_data)
+            }
             status if status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error() => {
                 // Implement retry logic here if needed
                 Err(anyhow!("Server error: {}", status))

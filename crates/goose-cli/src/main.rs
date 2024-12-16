@@ -6,6 +6,7 @@ mod commands {
 pub mod agents;
 mod profile;
 mod prompt;
+mod langfuse_layer;
 pub mod session;
 
 mod systems;
@@ -17,6 +18,10 @@ use commands::session::build_session;
 use commands::version::print_version;
 use profile::has_no_profiles;
 use std::io::{self, Read};
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
+use tracing_subscriber::util::SubscriberInitExt;  // Add this import
+use std::fs::{OpenOptions};
+use chrono::Local;
 
 #[cfg(test)]
 mod test_helpers;
@@ -191,8 +196,69 @@ enum CliProviderVariant {
     Ollama,
 }
 
+fn setup_logging() -> Result<()> {
+    // Create logs directory if it doesn't exist
+    let home_dir = dirs::home_dir().ok_or(anyhow::anyhow!("Could not determine home directory"))?;
+    let log_dir = home_dir.join(".config").join("goose").join("logs");
+    std::fs::create_dir_all(&log_dir)?;
+
+    // Create log file with timestamp
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S");
+    let log_file = log_dir.join(format!("goose_{}.log", timestamp));
+
+    // Create file logging layer with detailed information
+    let file_layer = fmt::layer()
+        .with_writer(move || -> Box<dyn std::io::Write> {
+            let file = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .create(true)
+                .open(&log_file)
+                .expect("Failed to open log file");
+            Box::new(file)
+        })
+        .with_target(true)
+        .with_thread_ids(true)
+        .with_line_number(true)
+        .with_file(true)
+        .with_ansi(false);
+
+    // Create the env filter
+    let env_filter = EnvFilter::from_default_env()
+        .add_directive(tracing::Level::INFO.into())
+        .add_directive("agent_tracing=debug".parse()?);
+        // .add_directive("goose=debug".parse()?);
+        
+
+    // Build the subscriber
+    // let subscriber = tracing_subscriber::registry()
+    //     .with(env_filter)
+    //     .with(file_layer);
+
+    // Add Langfuse layer if environment variables are present
+    if let Some(langfuse_layer) = langfuse_layer::create_langfuse_layer() {
+        let subscriber = tracing_subscriber::registry()
+            .with(env_filter)
+            .with(file_layer)
+            .with(langfuse_layer).init();
+    } else {
+        println!("ENV VARIABLES ARE NOT SET!");
+        // let subscriber = tracing_subscriber::registry()
+        // .with(env_filter)
+        // .with(file_layer)
+        // .init();
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Initialize logging
+    if let Err(e) = setup_logging() {
+        eprintln!("Failed to initialize logging: {}", e);
+    }
+
     let cli = Cli::parse();
 
     if cli.version {
