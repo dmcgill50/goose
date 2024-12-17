@@ -4,6 +4,7 @@ To install Goose, use `pipx` on macOS, Linux, or Windows.
 
 First, ensure [pipx][pipx] is installed:
 
+### macOS
 ```sh
 brew install pipx
 pipx ensurepath
